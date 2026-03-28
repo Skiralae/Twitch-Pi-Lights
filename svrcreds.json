@@ -1,0 +1,8 @@
+{
+  "client_id": "your_client_id_here",
+  "client_secret": "your_secret_here",
+  "bot_token": "oauth:your_token_here",
+  "channel": "your_channel_name",
+  "ip": "your_client_ip",
+  "port": "your_port"
+}
