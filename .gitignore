@@ -1,6 +1,7 @@
 # Credentials
 svrcreds.json
 clicreds.json
+.json
 
 # Python
 __pycache__/

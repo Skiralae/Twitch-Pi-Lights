@@ -1,6 +1,6 @@
 {
   "client_id": "your_client_id_here",
-  "client_secret": "your_secret_here",
+  "client_secret": "test",
   "bot_token": "oauth:your_token_here",
   "channel": "your_channel_name",
   "ip": "your_client_ip",
