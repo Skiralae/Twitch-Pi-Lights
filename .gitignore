@@ -1,0 +1,11 @@
+# Credentials
+svrcreds.json
+clicreds.json
+
+# Python
+__pycache__/
+*.pyc
+venv/
+
+# Editor
+.vscode/
