@@ -75,6 +75,6 @@ else:
 	print (reply.decode("utf-8"))
 
 # close the socket to free the resources used by the socket
-s.close()
+# s.close()
 
 
