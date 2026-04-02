@@ -8,6 +8,15 @@ from gpiozero import LED
 import RPi.GPIO as GPIO
 import time
 import json
+import asyncio
+
+numLights = 4 #must be 1 or greater
+numUsable = numLights - 1 #I'm leaving one light as a status light
+
+# an array to track the async methods
+tasks = None * numUsable 
+
+timeCount = 0
 
 # create an INET(IPv4), STREAMing(TCP) socket
 try:
@@ -32,49 +41,64 @@ s.connect((host, port))
 #initialize LEDS
 GPIO.cleanup()
 blue = LED(4)
-orange = LED(5)
+yellow = LED(5)
 white = LED(26)
+#red is special and will not run the commands
+flashy = [blue, yellow, white]
+
+red = LED(13)
+
+
 
 #makes them flash alternating and progressively faster
-def ledflash():
-	for i in range(5,1,-1):
-		blue.on()
-		white.off()
-		time.sleep(i)
-		blue.off()
-		orange.on()
-		time.sleep(i)
-		orange.off()
-		white.on()
-		time.sleep(i)
+async def ledflash(light, sec):
+	for i in range(sec,1,-1):
+		light.on
+		await asyncio.sleep(i)
+		light.off
+		await asyncio.sleep(i)
 
-
+def tryLight(func):
+	for i in tasks:
+		if (tasks[i] == None or tasks[i].done()):
+			tasks[i] = asyncio.create_task(func(flashy[i], 4))
+			break
 
 print ('Socket Connected to IP' + host)
+
 
 # Send some data to remote server
 message = 'LED ON'
 
-try:
-	# encode the string before sending
-	s.sendall(message.encode())
-except socket.error:
-	# Send failed
-	print ('Send failed')
-	sys.exit()
+while True:
+	try:
+		# encode the string before sending
+		s.sendall(message.encode())
+	except socket.error:
+		# Send failed
+		print ('Send failed')
+		sys.exit()
+		break
 
-print ('Message has been sent successfully')
+	print ('Message has been sent successfully')
 
-# receive data from server
-reply = s.recv(4096)    # the maximum size of the data is 4096
+	# receive data from server
+	reply = s.recv(4096)    # the maximum size of the data is 4096
 
-# decode the data to plain text
-if (reply.decode("utf-8") == 'ON'):
-	ledflash()
-else:
-	print (reply.decode("utf-8"))
+	# decode the data to plain text
+	if (reply.decode("utf-8") == 'ON'):
+		for j in range(2000, 0, -1):
+			tryLight(ledflash)
+		timeCount = 0
+	elif reply:
+		print (reply.decode("utf-8"))
+		timeCount = 0
+	else: 
+		timeCount += 1
+		if timeCount > 4000:
+			s.close
+			print("Connection timeout")
+		
 
-# close the socket to free the resources used by the socket
-# s.close()
 
 
