@@ -5,6 +5,7 @@ import sys
 import os
 import _thread as thread
 import json
+import webbrowser
 
 from twitchAPI.twitch import Twitch
 from twitchAPI.oauth import UserAuthenticator
