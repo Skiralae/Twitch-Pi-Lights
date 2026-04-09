@@ -26,6 +26,9 @@ channel = config["channel"]
 HOST = config["ip"]	  # the listening IP
 PORT = config["port"] # the listening port
 
+commandQueue = asyncio.Queue(maxsize=5)
+recieveQueue = asyncio.Queue()
+
 # The following is modified from twitch's documentation:
 # this will be called when the event READY is triggered, which will be on bot start
 async def on_ready(ready_event: EventData):
@@ -55,6 +58,14 @@ async def test_command(cmd: ChatCommand):
     else:
         await cmd.reply(f'{cmd.user.name}: {cmd.parameter}')
 
+# this will be called whenever the !reply command is issued
+async def queue_command(cmd: ChatCommand):
+    #if the command is valid and queue is not full, put command on queue
+    if len(cmd.parameter) > 0 and not commandQueue.full():
+        commandQueue.put(cmd.name + " " + cmd.parameter)
+        
+        
+
 
 # this is where we set up the bot
 async def run():
@@ -79,6 +90,7 @@ async def run():
 
     # you can directly register commands and their handlers, this will register the !reply command
     chat.register_command('reply', test_command)
+    chat.register_command('ledflash', queue_command)
 
 
     # we are done with our setup, lets start this bot up!
@@ -114,33 +126,25 @@ print ('Socket now listening')
 
 # Function for handling connections. This will be used to create threads
 def clientthread(conn):
-	#infinite loop so that function do not terminate and thread do not end.
-	while True:
-		
-		# Receiving from client
-		data = conn.recv(1024)
-		if not data: 
-			break
-		if (data.decode("utf-8") == 'LED ON'):
-			reply = 'ON'
-		else:
-			reply = 'Welcome to the Server, ' + data.decode("utf-8") + '!' + os.linesep
+    #infinite loop so that function do not terminate and thread do not end.
+    while True:
+        # Receiving from client
+        data = conn.recv(1024)
+        if not data: 
+            break
+        # if the queue has items, pop next and sent it
+        elif not commandQueue.empty():
+            commandQueue.join()
+            reply = commandQueue.get()
+        else:
+            reply = commandQueue.full()
+        
+        # force flush for nohup
+        sys.stdout.flush()
 
-		#https://www.geeksforgeeks.org/python/saving-text-json-and-csv-to-a-file-in-python/
-		#log the data and reply to a file
-		file = open("serverlog.txt", "a")
-		file.write('\n' + str(data) + ' ' + str(addr[0]) + ':' + str(addr[1]) + '\n')
-		file.write(str(reply) + '\n')
-		file.close()
-
-		print ('Welcome to the Server, ' + data.decode("utf-8") + '!')
-		# force flush for nohup
-		sys.stdout.flush()
-	
-		conn.sendall(reply.encode())
-	
+        conn.sendall(reply.encode())
 	# came out of loop if there is no data from the client
-	conn.close()
+    conn.close()
 
 # now keep talking with the client
 while True:

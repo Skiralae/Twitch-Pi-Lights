@@ -17,6 +17,7 @@ numUsable = numLights - 1 #I'm leaving one light as a status light
 tasks = None * numUsable 
 
 timeCount = 0
+message = ' '
 
 # create an INET(IPv4), STREAMing(TCP) socket
 try:
@@ -62,13 +63,14 @@ def tryLight(func):
 	for i in tasks:
 		if (tasks[i] == None or tasks[i].done()):
 			tasks[i] = asyncio.create_task(func(flashy[i], 4))
-			break
+			return
+	message = 'FULL'
 
 print ('Socket Connected to IP' + host)
 
 
 # Send some data to remote server
-message = 'LED ON'
+
 
 while True:
 	try:
@@ -86,13 +88,13 @@ while True:
 	reply = s.recv(4096)    # the maximum size of the data is 4096
 
 	# decode the data to plain text
-	if (reply.decode("utf-8") == 'ON'):
-		for j in range(2000, 0, -1):
-			tryLight(ledflash)
-		timeCount = 0
-	elif reply:
-		print (reply.decode("utf-8"))
-		timeCount = 0
+	if (reply):
+		input_str = reply.decode("utf-8")
+		func_name, argument = input_str.split(" ", 1)
+		try:
+			tryLight(func_name(argument))
+		finally:
+			timeCount = 0
 	else: 
 		timeCount += 1
 		if timeCount > 4000:
