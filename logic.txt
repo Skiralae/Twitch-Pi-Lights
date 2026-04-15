@@ -1,0 +1,13 @@
+Step 1:
+Client: Tell if a light is free
+Server: Tell if there is anything in queue
+
+Step 2:
+if queue has something:
+    if light free:
+        Server: Pop queue and send
+        Client: recieve that
+    else (light not free, something in queue): 
+        continue
+else (nothing in queue):
+    continue

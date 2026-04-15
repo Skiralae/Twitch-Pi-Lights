@@ -56,21 +56,31 @@ def clientthread(conn):
     #infinite loop so that function do not terminate and thread do not end.
     while True:
         # Receiving from client
+        #see logic.txt for what is going on here
+        #First step: send queue status to client, get light status
         data = conn.recv(1024)
         if not data: 
             break
-        # if the queue has items, pop next and sent it
-        elif not commandQueue.empty():
-            commandQueue.join()
-            reply = commandQueue.get()
+        # if the queue has items, first check if light is free
         else:
-            reply = commandQueue.full()
-        
+            if not commandQueue.empty():
+                reply1 = 'NOT EMPTY'
+            else:
+                reply1 = 'EMPTY'
         # force flush for nohup
         sys.stdout.flush()
-
-        conn.sendall(reply.encode())
-	# came out of loop if there is no data from the client
+        conn.sendall(reply1.encode())
+        #if queue is empty there is nothing to pop (so don't)
+        if (reply1 == 'EMPTY'):
+            continue
+        input1 = data.decode("utf-8")
+        #if lights are busy then you can't use them
+        if (input1 == 'NOT READY'):
+            continue
+        #should now only be here if there is something to pop AND a free light
+        reply2 = commandQueue.get()
+        conn.sendall(reply2.encode())
+	# come out of loop if there is no data from the client
     conn.close()
 
 # The following is modified from twitch's documentation:
@@ -159,8 +169,7 @@ async def run():
 asyncio.run(run())
 
 
-
-
+#I re entered this above but keeping here for posterity
 # now keep talking with the client
 # while True:
 #     # wait to accept a connection - blocking call

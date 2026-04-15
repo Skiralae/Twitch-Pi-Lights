@@ -11,13 +11,14 @@ import json
 import asyncio
 
 numLights = 4 #must be 1 or greater
-numUsable = numLights - 1 #I'm leaving one light as a status light
+
 
 # an array to track the async methods
-tasks = [None] * numUsable 
+tasks = [None] * numLights
 
 timeCount = 0
-message = ' '
+message1 = ' '
+message2 = ' '
 
 # create an INET(IPv4), STREAMing(TCP) socket
 try:
@@ -44,10 +45,10 @@ GPIO.cleanup()
 blue = LED(4)
 yellow = LED(5)
 white = LED(26)
-#red is special and will not run the commands
-flashy = [blue, yellow, white]
-
 red = LED(13)
+flashy = [blue, yellow, white, red]
+
+
 
 
 
@@ -59,12 +60,17 @@ async def ledflash(light, sec):
 		light.off
 		await asyncio.sleep(i)
 
+def isFree():
+	for i in tasks:
+		if (tasks[i] == None or tasks[i].done()):
+			return 'READY'
+	return 'NOT READY'
+
 def tryLight(func):
 	for i in tasks:
 		if (tasks[i] == None or tasks[i].done()):
-			tasks[i] = asyncio.create_task(func(flashy[i], 4))
+			tasks[i] = asyncio.create_task(func(flashy[i], argument))
 			return
-	message = 'FULL'
 
 print ('Socket Connected to IP' + host)
 
@@ -73,33 +79,40 @@ print ('Socket Connected to IP' + host)
 
 
 while True:
+	#see logic.txt for what is going on here
+	#First make sure there is something new to do
+	message1 = isFree() #checks if light is free
 	try:
 		# encode the string before sending
-		s.sendall(message.encode())
+		s.sendall(message1.encode()) #send light status to server
 	except socket.error:
 		# Send failed
 		print ('Send failed')
 		sys.exit()
 		break
 
-	print ('Message has been sent successfully')
-
-	# receive data from server
-	reply = s.recv(4096)    # the maximum size of the data is 4096
-
+	# receive queue status from server
+	reply1 = s.recv(4096)    # the maximum size of the data is 4096
 	# decode the data to plain text
-	if (reply):
-		input_str = reply.decode("utf-8")
-		func_name, argument = input_str.split(" ", 1)
-		try:
-			tryLight(func_name(argument))
-		finally:
-			timeCount = 0
-	else: 
-		timeCount += 1
-		if timeCount > 4000:
-			s.close
-			print("Connection timeout")
+	input_str = reply1.decode("utf-8")
+
+	#if lights are busy or queue is empty go back to step one
+	if (message1 == 'NOT READY'):
+		continue
+	if (input_str == 'EMPTY'):
+		continue
+
+	#if there is something useful to do then do it
+	reply2 = s.recv(4096)
+	input_str2 = reply2.decode("utf-8")
+	#should be getting a well-formed string that looks like a function call...
+	func_name, argument = input_str2.split(" ", 1)
+	#...so just make it a function to call
+	try:
+		tryLight(func_name(argument))
+	except:
+		print('tryLight failed')
+		
 		
 
 
