@@ -25,11 +25,53 @@ refresh_token = config["bot_refresh_token"]
 USER_SCOPE = [AuthScope.CHAT_READ, AuthScope.CHAT_EDIT]
 channel = config["channel"]
 
-HOST = config["ip"]	  # the listening IP
-PORT = config["port"] # the listening port
+HOST = config['ip']	  # the listening IP
+PORT = config['port'] # the listening port
 
 commandQueue = asyncio.Queue(maxsize=5)
 recieveQueue = asyncio.Queue()
+
+#Socket connection time!
+#Taken from the various labs we've done in the class
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+print ('Socket created')
+
+# Bind socket to local host and port
+try:
+	s.bind((HOST, int(PORT)))
+except socket.error as e:
+    # In Python 3, 'e' is an OSError object. 
+    # e.errno contains the code, and str(e) contains the message.
+    print(f"Bind failed. Error Code: {e.errno} Message: {e.strerror}")
+    sys.exit()
+	
+print ('Socket bind complete')
+
+# Start listening on socket, the size of queue is 10
+s.listen(10)
+print ('Socket now listening')
+
+# Function for handling connections. This will be used to create threads
+def clientthread(conn):
+    #infinite loop so that function do not terminate and thread do not end.
+    while True:
+        # Receiving from client
+        data = conn.recv(1024)
+        if not data: 
+            break
+        # if the queue has items, pop next and sent it
+        elif not commandQueue.empty():
+            commandQueue.join()
+            reply = commandQueue.get()
+        else:
+            reply = commandQueue.full()
+        
+        # force flush for nohup
+        sys.stdout.flush()
+
+        conn.sendall(reply.encode())
+	# came out of loop if there is no data from the client
+    conn.close()
 
 # The following is modified from twitch's documentation:
 # https://pytwitchapi.dev/en/stable/
@@ -100,7 +142,13 @@ async def run():
 
     # lets run till we press enter in the console
     try:
-        input('press ENTER to stop\\n')
+        #input('press ENTER to stop\\n')
+        #this is taken from below, but copy-pasting ruined indentation so I did it manuall
+        while True:
+            conn, addr = s.accept()
+            print ('Connected with ' + addr[0] + ':' + str(addr[1]))
+            thread.start_new_thread(clientthread, (conn,))
+        s.close()         
     finally:
         # now we can close the chat bot and the twitch api client
         chat.stop()
@@ -110,54 +158,18 @@ async def run():
 # lets run our setup
 asyncio.run(run())
 
-#Socket connection time!
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-print ('Socket created')
 
-# Bind socket to local host and port
-try:
-	s.bind((HOST, PORT))
-except (socket.error, msg):
-	print ('Bind failed. Error Code : ' + str(msg[0]) + ' Message ' + msg[1])
-	sys.exit()
-	
-print ('Socket bind complete')
 
-# Start listening on socket, the size of queue is 10
-s.listen(10)
-print ('Socket now listening')
-
-# Function for handling connections. This will be used to create threads
-def clientthread(conn):
-    #infinite loop so that function do not terminate and thread do not end.
-    while True:
-        # Receiving from client
-        data = conn.recv(1024)
-        if not data: 
-            break
-        # if the queue has items, pop next and sent it
-        elif not commandQueue.empty():
-            commandQueue.join()
-            reply = commandQueue.get()
-        else:
-            reply = commandQueue.full()
-        
-        # force flush for nohup
-        sys.stdout.flush()
-
-        conn.sendall(reply.encode())
-	# came out of loop if there is no data from the client
-    conn.close()
 
 # now keep talking with the client
-while True:
-    # wait to accept a connection - blocking call
-    # it will wait/hang until a connection request is coming
-	conn, addr = s.accept()
-	print ('Connected with ' + addr[0] + ':' + str(addr[1]))
+# while True:
+#     # wait to accept a connection - blocking call
+#     # it will wait/hang until a connection request is coming
+# 	conn, addr = s.accept()
+# 	print ('Connected with ' + addr[0] + ':' + str(addr[1]))
 	
-	# start new thread takes 1st argument as a function name to be run,
-    # second is the tuple of arguments to the function.
-	thread.start_new_thread(clientthread, (conn,))
+# 	# start new thread takes 1st argument as a function name to be run,
+#     # second is the tuple of arguments to the function.
+# 	thread.start_new_thread(clientthread, (conn,))
 
-s.close()
+# s.close()

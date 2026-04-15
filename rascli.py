@@ -14,7 +14,7 @@ numLights = 4 #must be 1 or greater
 numUsable = numLights - 1 #I'm leaving one light as a status light
 
 # an array to track the async methods
-tasks = None * numUsable 
+tasks = [None] * numUsable 
 
 timeCount = 0
 message = ' '
@@ -37,7 +37,7 @@ host = config["ip"]   # the IP address of the server to connect
 port = config["port"] # the port number of the application
 
 # Connect to remote server
-s.connect((host, port))
+s.connect((host, int(port)))
 
 #initialize LEDS
 GPIO.cleanup()
