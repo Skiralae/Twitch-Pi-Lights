@@ -70,15 +70,16 @@ def clientthread(conn):
         # force flush for nohup
         sys.stdout.flush()
         conn.sendall(reply1.encode())
-        #if queue is empty there is nothing to pop (so don't)
-        if (reply1 == 'EMPTY'):
-            continue
+        #recieve input no matter what for correctness
         input1 = data.decode("utf-8")
         #if lights are busy then you can't use them
         if (input1 == 'NOT READY'):
             continue
+        #if queue is empty there is nothing to pop (so don't)
+        if (reply1 == 'EMPTY'):
+            continue
         #should now only be here if there is something to pop AND a free light
-        reply2 = commandQueue.get()
+        reply2 = str(commandQueue.get_nowait())
         conn.sendall(reply2.encode())
 	# come out of loop if there is no data from the client
     conn.close()
@@ -113,11 +114,25 @@ async def test_command(cmd: ChatCommand):
     else:
         await cmd.reply(f'{cmd.user.name}: {cmd.parameter}')
 
-# this will be called whenever the !reply command is issued
-async def queue_command(cmd: ChatCommand):
+#flashes the LED
+async def ledFlash(cmd: ChatCommand):
     #if the command is valid and queue is not full, put command on queue
+    parameter = cmd.parameter
     if len(cmd.parameter) > 0 and not commandQueue.full():
-        commandQueue.put(cmd.name + " " + cmd.parameter)
+        #if parameter is invalid is should go to except
+        try:
+            #I don't really want it to flash more than 5 times
+            if (int(parameter) > 5):
+                parameter = 5
+            else:
+                paramater = parameter
+            await commandQueue.put("ledFlash " + parameter)
+        #catch all exceptions because the show must go on
+        except Exception as e:
+            #f means formatted string
+            print(f"Error Type: {type(e).__name__}")
+            print(f"Error Details: {repr(e)}")
+#do nothing if queue is full or not enough parameters
         
         
 
@@ -144,7 +159,7 @@ async def run():
 
     # you can directly register commands and their handlers, this will register the !reply command
     chat.register_command('reply', test_command)
-    chat.register_command('ledFlash', queue_command)
+    chat.register_command('ledFlash', ledFlash)
 
 
     # we are done with our setup, lets start this bot up!
