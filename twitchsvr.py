@@ -9,6 +9,7 @@ import webbrowser
 
 from twitchAPI.twitch import Twitch
 from twitchAPI.oauth import UserAuthenticator
+from twitchAPI.oauth import refresh_access_token
 from twitchAPI.type import AuthScope, ChatEvent
 from twitchAPI.chat import Chat, EventData, ChatMessage, ChatSub, ChatCommand
 import asyncio
@@ -19,7 +20,8 @@ with open("svrcreds.json") as f:
 
 client_id = config["client_id"]
 client_secret = config["client_secret"]
-token = config["bot_token"]
+access_token = config["bot_access_token"]
+refresh_token = config["bot_refresh_token"]
 USER_SCOPE = [AuthScope.CHAT_READ, AuthScope.CHAT_EDIT]
 channel = config["channel"]
 
@@ -30,6 +32,7 @@ commandQueue = asyncio.Queue(maxsize=5)
 recieveQueue = asyncio.Queue()
 
 # The following is modified from twitch's documentation:
+# https://pytwitchapi.dev/en/stable/
 # this will be called when the event READY is triggered, which will be on bot start
 async def on_ready(ready_event: EventData):
     print('Bot is ready for work, joining channels')
@@ -71,9 +74,8 @@ async def queue_command(cmd: ChatCommand):
 async def run():
     # set up twitch api instance and add user authentication with some scopes
     twitch = await Twitch(client_id, client_secret)
-    auth = UserAuthenticator(twitch, USER_SCOPE)
-    token, refresh_token = await auth.authenticate()
-    await twitch.set_user_authentication(token, USER_SCOPE, refresh_token)
+    # auth = UserAuthenticator(twitch, USER_SCOPE)
+    await twitch.set_user_authentication(access_token, USER_SCOPE, refresh_token)
 
     # create chat instance
     chat = await Chat(twitch)
@@ -90,7 +92,7 @@ async def run():
 
     # you can directly register commands and their handlers, this will register the !reply command
     chat.register_command('reply', test_command)
-    chat.register_command('ledflash', queue_command)
+    chat.register_command('ledFlash', queue_command)
 
 
     # we are done with our setup, lets start this bot up!
@@ -108,6 +110,7 @@ async def run():
 # lets run our setup
 asyncio.run(run())
 
+#Socket connection time!
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 print ('Socket created')
 
