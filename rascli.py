@@ -41,17 +41,18 @@ s.connect((host, int(port)))
 
 #initialize LEDS
 blue = LED(4)
-yellow = LED(5)
+yellow = LED(27)
 white = LED(26)
 red = LED(13)
 flashy = [blue, yellow, white, red]
 
 #makes them flash alternating and progressively faster
 async def ledFlash(light, sec):
-	for i in range(sec,1,-1):
-		light.on
+	print("ledFlash called" + str(sec))
+	for i in range(sec,0,-1):
+		flashy[light].on()
 		await asyncio.sleep(i)
-		light.off
+		flashy[light].off()
 		await asyncio.sleep(i)
 
 def isFree():
@@ -66,7 +67,8 @@ def tryLight(func, time):
 			#the later loop is lying, THIS is where it becomes a function call
 			funcName = func
 			tempFunc = globals()[funcName]
-			tasks[i] = asyncio.create_task(tempFunc(flashy[i], time))
+			print("calling " + funcName + " on light " + str(i))
+			tasks[i] = asyncio.create_task(tempFunc(i, int(time)))
 			return
 		
 # #try light doesn't work unless list is initialized
@@ -82,43 +84,46 @@ print ('Socket Connected to IP' + host)
 
 
 async def main():
+	#the blocking is preventing async lights
+	s.setblocking(False)
+	loop = asyncio.get_event_loop()
 	# Send some data to remote server
 	while True:
+		await asyncio.sleep(.01)
 		#see logic.txt for what is going on here
 		#First make sure there is something new to do
 		message1 = isFree() #checks if light is free
 		try:
 			# encode the string before sending
-			s.sendall(message1.encode()) #send light status to server
+			await loop.sock_sendall(s, message1.encode()) #send light status to server
+			# receive queue status from server
+			reply1 = await loop.sock_recv(s, 4096)    # the maximum size of the data is 4096
+			# decode the data to plain text
+			input_str = reply1.decode("utf-8")
 		except socket.error:
 			# Send failed
 			print ('Send failed')
 			sys.exit()
 			break
-
-		# receive queue status from server
-		reply1 = s.recv(4096)    # the maximum size of the data is 4096
-		# decode the data to plain text
-		input_str = reply1.decode("utf-8")
-
 		#if lights are busy or queue is empty go back to step one
 		if (message1 == 'NOT READY'):
 			continue
 		if (input_str == 'EMPTY'):
 			continue
-
 		#if there is something useful to do then do it
-		reply2 = s.recv(4096)
+		reply2 = await loop.sock_recv(s, 4096)
 		input_str2 = reply2.decode("utf-8")
 		#should be getting a well-formed string that looks like a function call...
 		print(input_str2)
 		func_name, argument = input_str2.split(" ", 1)
 		#...so just make it a function to call
 		try:
-			tryLight(func_name, argument)
+			tryLight(func_name, int(argument))
+			#f means formatted string 
 		except Exception as e:
 	            #f means formatted string
 	            print(f"Error Type: {type(e).__name__} Error Details: {repr(e)}")
+		
 
 asyncio.run(main())
 
