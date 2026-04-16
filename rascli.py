@@ -48,12 +48,20 @@ flashy = [blue, yellow, white, red]
 
 #makes them flash alternating and progressively faster
 async def ledFlash(light, sec):
-	print("ledFlash called" + str(sec))
+	print("ledFlash called " + str(sec))
 	for i in range(sec,0,-1):
 		flashy[light].on()
 		await asyncio.sleep(i)
 		flashy[light].off()
 		await asyncio.sleep(i)
+
+async def ledBlink(light, num):
+	print("ledBlink called " + str(num))
+	for i in range(num):
+		flashy[light].on()
+		await asyncio.sleep(.1)
+		flashy[light].off()
+		await asyncio.sleep(.1)
 
 def isFree():
 	for i in flashy:

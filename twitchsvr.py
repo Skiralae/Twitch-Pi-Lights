@@ -133,6 +133,26 @@ async def ledFlash(cmd: ChatCommand):
             print(f"Error Type: {type(e).__name__}")
             print(f"Error Details: {repr(e)}")
 #do nothing if queue is full or not enough parameters
+
+#blinks the LED
+async def ledBlink(cmd: ChatCommand):
+    #if the command is valid and queue is not full, put command on queue
+    parameter = cmd.parameter
+    if len(cmd.parameter) > 0 and not commandQueue.full():
+        #if parameter is invalid is should go to except
+        try:
+            #I don't really want it to flash more than 5 times
+            if (int(parameter) > 25):
+                parameter = 25
+            else:
+                paramater = parameter
+            await commandQueue.put("ledBlink " + str(parameter))
+        #catch all exceptions because the show must go on
+        except Exception as e:
+            #f means formatted string
+            print(f"Error Type: {type(e).__name__}")
+            print(f"Error Details: {repr(e)}")
+#do nothing if queue is full or not enough parameters
         
         
 
@@ -158,8 +178,9 @@ async def run():
     # there are more events, you can view them all in this documentation
 
     # you can directly register commands and their handlers, this will register the !reply command
-    chat.register_command('reply', test_command)
+    #chat.register_command('reply', test_command)
     chat.register_command('ledFlash', ledFlash)
+    chat.register_command('ledBlink', ledBlink)
 
 
     # we are done with our setup, lets start this bot up!
