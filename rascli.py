@@ -15,7 +15,6 @@ numLights = 4 #must be 1 or greater
 # an array to track the async methods
 tasks = [None] * numLights
 
-timeCount = 0
 message1 = ' '
 message2 = ' '
 
@@ -27,7 +26,6 @@ except socket.error:
 	sys.exit()
 	
 print ('Socket Created')
-
 
 # get creds from a file for safety
 with open("clicreds.json") as f:
@@ -44,7 +42,7 @@ blue = LED(4)
 yellow = LED(27)
 white = LED(26)
 red = LED(13)
-flashy = [blue, yellow, white, red]
+flashy = [blue, yellow, white, red] #list of LEDS
 
 #makes them flash alternating and progressively faster
 async def ledFlash(light, sec):
@@ -80,7 +78,6 @@ async def ledPulse(light, num):
 		flashy[light].off()
 		await asyncio.sleep(1)
 
-
 def isFree():
 	for i in flashy:
 		if (not i.is_lit):
@@ -107,7 +104,6 @@ def tryLight(func, time):
 # init()
 
 print ('Socket Connected to IP' + host)
-
 
 async def main():
 	#the blocking is preventing async lights
@@ -147,10 +143,8 @@ async def main():
 			tryLight(func_name, int(argument))
 			#f means formatted string 
 		except Exception as e:
-	            #f means formatted string
-	            print(f"Error Type: {type(e).__name__} Error Details: {repr(e)}")
-		
-
+			#f means formatted string
+			print(f"Error Type: {type(e).__name__} Error Details: {repr(e)}")
 asyncio.run(main())
 
 
