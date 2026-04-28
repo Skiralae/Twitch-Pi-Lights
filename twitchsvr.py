@@ -114,6 +114,11 @@ async def test_command(cmd: ChatCommand):
     else:
         await cmd.reply(f'{cmd.user.name}: {cmd.parameter}')
 
+async def help(cmd: ChatCommand):
+    if len(cmd.parameter) == 0:
+        await cmd.reply('!pulse (1-7) for a N bursts of 3 pulses, !blink (1-25) for N fast blinks, !flash (1-5) to flash on N times')
+
+
 #flashes the LED
 async def ledFlash(cmd: ChatCommand):
     #if the command is valid and queue is not full, put command on queue
@@ -199,6 +204,7 @@ async def run():
     chat.register_command('flash', ledFlash)
     chat.register_command('blink', ledBlink)
     chat.register_command('pulse', ledPulse)
+    chat.register_command('help', help)
 
 
     # we are done with our setup, lets start this bot up!
