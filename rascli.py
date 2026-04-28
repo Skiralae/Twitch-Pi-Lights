@@ -63,6 +63,24 @@ async def ledBlink(light, num):
 		flashy[light].off()
 		await asyncio.sleep(.1)
 
+#pulse three times then wait a second (num) times
+async def ledPulse(light, num):
+	print("ledPulse called " + str(num))
+	for i in range(num):
+		flashy[light].on()
+		await asyncio.sleep(.2)
+		flashy[light].off()
+		await asyncio.sleep(.2)
+		flashy[light].on()
+		await asyncio.sleep(.2)
+		flashy[light].off()
+		await asyncio.sleep(.2)
+		flashy[light].on()
+		await asyncio.sleep(.2)
+		flashy[light].off()
+		await asyncio.sleep(1)
+
+
 def isFree():
 	for i in flashy:
 		if (not i.is_lit):
